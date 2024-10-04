@@ -60,21 +60,26 @@ fi
 echo "Backing up existing dotfiles and applying new configurations..."
 cd "$DOTFILES_DIR"
 
-# List of files and directories to stow (include dotfiles and .config)
-DOTFILES_TO_STOW=$(find . -maxdepth 1 -mindepth 1 -not -name '.git' -not -name 'README.md' -not -name '.gitignore')
+# Find all files in the dotfiles directory, excluding .git directory
+DOTFILES_FILES=$(find . -type f -not -path './.git/*' -not -name '.git')
 
-# Backup existing dotfiles
-for file in $DOTFILES_TO_STOW; do
-  filename=$(basename "$file")
-  target="$HOME/$filename"
+# Backup existing files
+for file in $DOTFILES_FILES; do
+  # Remove leading './' from the file path
+  relative_path="${file#./}"
+  target="$HOME/$relative_path"
+  # Create the parent directory of the target if it doesn't exist
+  mkdir -p "$(dirname "$target")"
   if [ -e "$target" ] && [ ! -L "$target" ]; then
     mv "$target" "$target.bak"
     echo "Backed up $target to $target.bak"
+  elif [ -L "$target" ]; then
+    rm "$target"
   fi
 done
 
 # Apply stow
-stow --dotfiles .
+stow --dotfiles --target="$HOME" .
 
 # Reload shell configurations
 echo "Reloading shell configurations..."
