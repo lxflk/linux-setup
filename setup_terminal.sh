@@ -56,62 +56,23 @@ if [ ! -d "$DOTFILES_DIR" ]; then
   git clone "$DOTFILES_REPO" "$DOTFILES_DIR"
 fi
 
-# Backup existing dotfiles and apply new ones using stow
-echo "Backing up existing dotfiles and applying new configurations..."
-cd "$DOTFILES_DIR"
-
-# Find all files in the dotfiles directory, excluding .git directory
-DOTFILES_FILES=$(find . -type f -not -path './.git/*' -not -name '.git')
-
-# Backup existing files
-for file in $DOTFILES_FILES; do
-  # Remove leading './' from the file path
-  relative_path="${file#./}"
-  target="$HOME/$relative_path"
-  # Create the parent directory of the target if it doesn't exist
-  mkdir -p "$(dirname "$target")"
-  if [ -e "$target" ] && [ ! -L "$target" ]; then
-    mv "$target" "$target.bak"
-    echo "Backed up $target to $target.bak"
-  elif [ -L "$target" ]; then
-    rm "$target"
-  fi
-done
-
-# Apply stow
-stow --dotfiles --target="$HOME" .
-
-# Reload shell configurations
-echo "Reloading shell configurations..."
-if [ -f "$HOME/.zshrc" ]; then
-  source "$HOME/.zshrc"
-fi
-
 # Apply dircolors settings
 if [ -f "$HOME/.dircolors" ]; then
   echo "Applying dircolors settings..."
   eval "$(dircolors -b "$HOME/.dircolors")"
 fi
 
-# Reload tmux configuration for all sessions
-if command -v tmux >/dev/null 2>&1; then
-  echo "Reloading tmux configuration..."
-  tmux list-sessions -F "#{session_name}" 2>/dev/null | while read -r session; do
-    tmux send-keys -t "$session" ":source-file ~/.config/tmux/tmux.conf" Enter
-    echo "Reloaded tmux configuration for session: $session"
-  done
-fi
-
-# Install Tmux plugins
-if [ -d "$TPM_DIR" ]; then
-  echo "Installing Tmux plugins..."
-  "$TPM_DIR"/scripts/install_plugins.sh
-fi
-
-# Reload WezTerm configuration
-if pgrep wezterm >/dev/null 2>&1; then
-  echo "Reloading WezTerm configuration..."
-  wezterm cli reload
-fi
-
-echo "Setup complete! Please restart your terminal session to ensure all changes take effect."
+# Final instructions
+echo
+echo "Setup complete!"
+echo
+echo "Next steps:"
+echo "1. Navigate to the dotfiles directory:"
+echo "   cd \"$HOME/dotfiles\""
+echo
+echo "2. Apply the dotfiles configuration using stow:"
+echo "   stow ."
+echo
+echo "3. Open WezTerm."
+echo
+echo "4. Inside tmux, press 'prefix + I' (typically 'Ctrl + b') to install the plugins."
